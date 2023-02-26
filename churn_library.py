@@ -46,7 +46,7 @@ class ChurnPredictor():
                 """
                 self.path = path
                 self.target_column = target_column
-                self.target_colummn_churn_name = target_column_churn_name
+                self.target_column_churn_name = target_column_churn_name
 
 
 
@@ -54,12 +54,16 @@ class ChurnPredictor():
                 """     returns dataframe for the csv found at pth
 
                 input:
-                        pth: a path to the csv
+                        self.path: (str) a path to the csv
                 output:
-                        df: pandas dataframe
+                        self.dataframe: (DataFrame) pandas dataframe
                 """	
                 
+                # Read in .csv file
                 self.dataframe = pd.read_csv(self.path)
+
+                # Encode target column to create a binary classification problem
+                self.dataframe[self.target_column] = self.dataframe[self.target_column].apply(lambda val: 1 if val == self.target_column_churn_name else 0)
 
                 return self.dataframe
 
@@ -69,7 +73,7 @@ class ChurnPredictor():
                 '''
                 perform eda on df and save figures to images folder
                 input:
-                        self.dataframe: pandas dataframe
+                        self.dataframe: (DataFrame) pandas dataframe
 
                 output:
                         None
@@ -85,17 +89,17 @@ class ChurnPredictor():
                 print(self.dataframe.describe())
 
                 # Identify column types
-                cat_columns = self.dataframe.select_dtypes(include = 'object').columns
-                num_columns = self.dataframe.select_dtypes(include = ['int', 'float']).columns
+                self.cat_columns = self.dataframe.select_dtypes(include = 'object').columns
+                self.num_columns = self.dataframe.select_dtypes(include = ['int', 'float']).columns
 
                 # Plot and save univariate analysis and bivariate analysis
-                for column in num_columns:
+                for column in self.num_columns:
                         fig = plt.figure(figsize=(20,10))
                         self.dataframe[column].hist()
                         fig.savefig('images/eda/{}_num_univariate.png'.format(column))
                         plt.close(fig)
         
-                for column in cat_columns:
+                for column in self.cat_columns:
                         fig = plt.figure(figsize=(20,10))
                         self.dataframe[column].value_counts('normalize').plot(kind='bar')
                         fig.savefig('images/eda/{}_cat_univariate.png'.format(column))
@@ -111,28 +115,36 @@ class ChurnPredictor():
 
 
 
-        def encoder_helper(self, df, category_lst, response):
+        def encoder_helper(self):
                 '''
                 helper function to turn each categorical column into a new column with
                 propotion of churn for each category - associated with cell 15 from the notebook
 
                 input:
-                        df: pandas dataframe
-                        category_lst: list of columns that contain categorical features
-                        response: string of response name [optional argument that could be used for naming variables or index y column]
-
+                        self.dataframe: (DataFrame) pandas dataframe
+                        self.cat_columns: (list) list of columns that contain categorical features
+                        
                 output:
-                        df: pandas dataframe with new columns for
+                        self.dataframe: (DataFrame) pandas dataframe with new columns
                 '''
-                pass
+                
+                for column in self.cat_columns:
+                        helper_lst = []
+                        cat_column_groups = self.dataframe.groupby(column).mean()[self.target_column]
+
+                        for val in self.dataframe[column]:
+                                helper_lst.append(cat_column_groups.loc[val])
+
+                        self.dataframe[column] = helper_lst
+
+                return self.dataframe
 
 
         def perform_feature_engineering(self, df, response):
                 '''
                 input:
-                        df: pandas dataframe
-                        response: string of response name [optional argument that could be used for naming variables or index y column]
-
+                        self.dataframe: (DataFrame) pandas dataframe
+                        
                 output:
                         X_train: X training data
                         X_test: X testing data
@@ -194,3 +206,4 @@ if __name__ == '__main__':
         predictor = ChurnPredictor('data/bank_data.csv', 'Attrition_Flag', 'Attrited_Customer')
         predictor.import_data()
         predictor.perform_eda()
+        predictor.encoder_helper()
