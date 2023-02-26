@@ -77,9 +77,11 @@ class ChurnPredictor():
                 
                 # Print out some overview metrics regarding the dataset
                 print("SUMMARY of the imported data: \n")
-                print("Shape:")
+                print("Shape: \n")
                 print(self.dataframe.shape)
+                print("Number of NaN values: \n")
                 print(self.dataframe.isnull().sum())
+                print("Statistics of numerical columns: \n")
                 print(self.dataframe.describe())
 
                 # Identify column types
@@ -91,18 +93,18 @@ class ChurnPredictor():
                         fig = plt.figure(figsize=(20,10))
                         self.dataframe[column].hist()
                         fig.savefig('images/eda/{}_num_univariate.png'.format(column))
-                        fig.close()
+                        plt.close(fig)
         
                 for column in cat_columns:
                         fig = plt.figure(figsize=(20,10))
                         self.dataframe[column].value_counts('normalize').plot(kind='bar')
                         fig.savefig('images/eda/{}_cat_univariate.png'.format(column))
-                        fig.close()
-                 
-                plt.figure(figsize=(20,10)) 
+                        plt.close(fig)
+
+                fig = plt.figure(figsize=(20,10)) 
                 sns.heatmap(self.dataframe.corr(), annot=False, cmap='Dark2_r', linewidths = 2)
                 fig.savefig('images/eda/bivariate.png'.format(column))
-                fig.close()
+                plt.close(fig)
 
                 
 
@@ -125,7 +127,7 @@ class ChurnPredictor():
                 pass
 
 
-        def perform_feature_engineering(df, response):
+        def perform_feature_engineering(self, df, response):
                 '''
                 input:
                         df: pandas dataframe
@@ -138,7 +140,8 @@ class ChurnPredictor():
                         y_test: y testing data
                 '''
 
-        def classification_report_image(y_train,
+        def classification_report_image(self,
+                                        y_train,
                                         y_test,
                                         y_train_preds_lr,
                                         y_train_preds_rf,
@@ -161,7 +164,7 @@ class ChurnPredictor():
                 pass
 
 
-        def feature_importance_plot(model, X_data, output_pth):
+        def feature_importance_plot(self, model, X_data, output_pth):
                 '''
                 creates and stores the feature importances in pth
                 input:
@@ -174,7 +177,7 @@ class ChurnPredictor():
                 '''
                 pass
 
-        def train_models(X_train, X_test, y_train, y_test):
+        def train_models(self, X_train, X_test, y_train, y_test):
                 '''
                 train, store model results: images + scores, and store models
                 input:
