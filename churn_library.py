@@ -16,6 +16,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 
+from constants import random_forest_search_space
+
 from sklearn.preprocessing import normalize
 from sklearn.model_selection import train_test_split
 
@@ -23,9 +25,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 
-# from sklearn.metrics import plot_roc_curve, classification_report
+from sklearn.metrics import plot_roc_curve, classification_report
 
-os.environ['QT_QPA_PLATFORM']='offscreen'
 
 class ChurnPredictor():
         """
@@ -35,6 +36,8 @@ class ChurnPredictor():
                 Methods:
 
         """
+
+
         def __init__(self, path, target_column, target_column_churn_name):
                 """     
                 initializes the class ChurnPredictor and assigns the input parameters
@@ -48,6 +51,7 @@ class ChurnPredictor():
                 self.target_column = target_column
                 self.target_column_churn_name = target_column_churn_name
 
+                #TODO: Add all self.function() here for testing to execute all following steps in the initialization of the created object
 
 
         def import_data(self):
@@ -66,7 +70,6 @@ class ChurnPredictor():
                 self.dataframe[self.target_column] = self.dataframe[self.target_column].apply(lambda val: 1 if val == self.target_column_churn_name else 0)
 
                 return self.dataframe
-
 
 
         def perform_eda(self):
@@ -110,10 +113,6 @@ class ChurnPredictor():
                 fig.savefig('images/eda/bivariate.png'.format(column))
                 plt.close(fig)
 
-                
-
-
-
 
         def encoder_helper(self):
                 '''
@@ -140,31 +139,64 @@ class ChurnPredictor():
                 return self.dataframe
 
 
-        def perform_feature_engineering(self, df, response):
+        def perform_feature_engineering(self):
                 '''
                 input:
                         self.dataframe: (DataFrame) pandas dataframe
                         
                 output:
-                        X_train: X training data
-                        X_test: X testing data
-                        y_train: y training data
-                        y_test: y testing data
+                        self.X_train: X training data
+                        self.X_test: X testing data
+                        self.y_train: y training data
+                        self.y_test: y testing data
                 '''
 
-        def classification_report_image(self,
-                                        y_train,
-                                        y_test,
-                                        y_train_preds_lr,
-                                        y_train_preds_rf,
-                                        y_test_preds_lr,
-                                        y_test_preds_rf):
+                df_train_columns = self.dataframe.drop([self.target_column], axis=1)              
+                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(df_train_columns, self.dataframe[self.target_column], test_size= 0.3, random_state=42)
+                return  self.X_train, self.X_test, self.y_train, self.y_test
+
+
+        def train_models(self):
+                '''
+                train, store model results: images + scores, and store models
+                input:
+                        self.X_train: X training data
+                        self.X_test: X testing data
+                        self.y_train: y training data
+                        self.y_test: y testing data
+                output:
+                        None
+                '''
+                # grid search
+                rfc = RandomForestClassifier(random_state=42)
+                lrc = LogisticRegression(solver='lbfgs', max_iter=30) #TODO: increase to 3000 after testing
+                
+                # Define search space for Random Forest
+                param_grid = random_forest_search_space
+
+                cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
+                cv_rfc.fit(self.X_train, self.y_train)
+                print(self.X_train.head()) #TODO: remove after testing
+                print(self.y_train.head()) #TODO: remove after testing
+                lrc.fit(self.X_train, self.y_train)
+
+                self.y_train_preds_rf = cv_rfc.best_estimator_.predict(self.X_train)
+                self.y_test_preds_rf = cv_rfc.best_estimator_.predict(self.X_test)
+
+                self.y_train_preds_lr = lrc.predict(self.X_train)
+                self.y_test_preds_lr = lrc.predict(self.X_test)      
+
+                 # save best model
+                joblib.dump(cv_rfc.best_estimator_, './models/rfc_model.pkl')
+                joblib.dump(lrc, './models/logistic_model.pkl')
+
+        def classification_report_image(self):
                 '''
                 produces classification report for training and testing results and stores report as image
                 in images folder
                 input:
-                        y_train: training response values
-                        y_test:  test response values
+                        self.y_train: training response values
+                        self.y_test:  test response values
                         y_train_preds_lr: training predictions from logistic regression
                         y_train_preds_rf: training predictions from random forest
                         y_test_preds_lr: test predictions from logistic regression
@@ -173,37 +205,63 @@ class ChurnPredictor():
                 output:
                         None
                 '''
-                pass
+                # Print scores to terminal
+                print('random forest results')
+                print('test results')
+                print(classification_report(self.y_test, self.y_test_preds_rf))
+                print('train results')
+                print(classification_report(self.y_train, self.y_train_preds_rf))
+
+                print('logistic regression results')
+                print('test results')
+                print(classification_report(self.y_test, self.y_test_preds_lr))
+                print('train results')
+                print(classification_report(self.y_train, self.y_train_preds_lr))
+
+                # Load models
+                rfc_model = joblib.load('./models/rfc_model.pkl')
+                lr_model = joblib.load('./models/logistic_model.pkl')   
+
+                # Create and save ROC curves
+                lrc_plot = plot_roc_curve(lr_model, self.X_test, self.y_test)
+                lrc_plot.figure_.savefig('images/results/logistic_model_roc.png')
+
+                rfc_plot = plot_roc_curve(rfc_model, self.X_test, self.y_test)
+                rfc_plot.figure_.savefig('images/results/rforest_model_roc.png')
+
+                combined_figure = plt.figure(figsize=(15, 8))
+                axis = plt.gca()
+                rfc_disp = plot_roc_curve(rfc_model, self.X_test, self.y_test, ax=axis, alpha=0.8)
+                lrc_plot.plot(ax=axis, alpha=0.8)
+                combined_figure.savefig('images/results/combined_roc.png')
+                plt.close(combined_figure)
 
 
-        def feature_importance_plot(self, model, X_data, output_pth):
+        def feature_importance_plot(self):
                 '''
                 creates and stores the feature importances in pth
                 input:
                         model: model object containing feature_importances_
-                        X_data: pandas dataframe of X values
-                        output_pth: path to store the figure
+                        self.dataframe: pandas dataframe of X & y values                        
 
                 output:
                         None
                 '''
-                pass
+                # Load random forest model
+                rfc_model = joblib.load('./models/rfc_model.pkl')
 
-        def train_models(self, X_train, X_test, y_train, y_test):
-                '''
-                train, store model results: images + scores, and store models
-                input:
-                        X_train: X training data
-                        X_test: X testing data
-                        y_train: y training data
-                        y_test: y testing data
-                output:
-                        None
-                '''
-                pass
+                explainer = shap.TreeExplainer(rfc_model)
+                shap_values = explainer.shap_values(self.X_test)
+                shap.summary_plot(shap_values, self.X_test, plot_type="bar", show=False)
+                plt.savefig('images/results/feature_importance_SHAP')
+        
 
 if __name__ == '__main__':
-        predictor = ChurnPredictor('data/bank_data.csv', 'Attrition_Flag', 'Attrited_Customer')
+        predictor = ChurnPredictor('data/bank_data.csv', 'Attrition_Flag', 'Attrited Customer')
         predictor.import_data()
         predictor.perform_eda()
         predictor.encoder_helper()
+        predictor.perform_feature_engineering()
+        predictor.train_models()
+        predictor.classification_report_image()
+        predictor.feature_importance_plot()
