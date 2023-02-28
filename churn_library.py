@@ -6,34 +6,36 @@ Module that defines all necessary functions as part of a class, that can be used
 Author: David Hedderich
 Date: 26.02.2023
 """
-
 # import libraries
-import os
 import shap
 import joblib
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 
-from constants import random_forest_search_space
-
-from sklearn.preprocessing import normalize
 from sklearn.model_selection import train_test_split
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
-
 from sklearn.metrics import plot_roc_curve, classification_report
+from constants import random_forest_search_space
 
 
 class ChurnPredictor():
         """
-        The following class imports data from ./data, performs an EDA, saves the EDA results to a folder, encodes specific columns, performs feature engineering, trains a machine learning model, saves a training report to ./images/results and saves the machine learning models to ./models
-                Attributes:
-                
+        The following class imports data from ./data, performs an EDA, saves the EDA results to a folder,
+        encodes specific columns, performs feature engineering, trains a machine learning model,
+        saves a training report to ./images/results and saves the machine learning models to ./models
+                Arguments:
+                path: (str) a path to the csv
+
                 Methods:
+                import_data: returns dataframe for the csv found at pth
+                target_column: (str) column that holds the binary classification resulting in either "Churn" (1) or "No Churn (0)
+                target_column_churn_name: (str) name of the positive class within the binary classification target column that
+                represents the "Churn" (1), if the target column is categorical          
+                
+
 
         """
 
@@ -45,17 +47,28 @@ class ChurnPredictor():
                 input:
                         path: (str) a path to the csv
                         target_column: (str) column that holds the binary classification resulting in either "Churn" (1) or "No Churn (0)
-                        target_column_churn_name: (str) name of the positive class within the binary classification target column that represents the "Churn" (1), if the target column is categorical          
+                        target_column_churn_name: (str) name of the positive class within the binary classification target column that
+                        represents the "Churn" (1), if the target column is categorical          
                 """
                 self.path = path
                 self.target_column = target_column
                 self.target_column_churn_name = target_column_churn_name
 
+                self.dataframe = self.import_data()   
+                self.cat_columns, self.num_columns = self.perform_eda()    
+                self.encoder_helper()         
+                self.X_train, self.X_test, self.y_train, self.y_test = self.perform_feature_engineering()
+                self.y_train_preds_rf, self.y_test_preds_rf, self.y_train_preds_lr, self.y_test_preds_lr = self.train_models()
+                self.classification_report_image()
+                self.feature_importance_plot()
+                
+
+
                 #TODO: Add all self.function() here for testing to execute all following steps in the initialization of the created object
 
 
         def import_data(self):
-                """     returns dataframe for the csv found at pth
+                """     returns dataframe for the csv found at path
 
                 input:
                         self.path: (str) a path to the csv
@@ -64,12 +77,12 @@ class ChurnPredictor():
                 """	
                 
                 # Read in .csv file
-                self.dataframe = pd.read_csv(self.path)
+                dataframe = pd.read_csv(self.path)
 
                 # Encode target column to create a binary classification problem
-                self.dataframe[self.target_column] = self.dataframe[self.target_column].apply(lambda val: 1 if val == self.target_column_churn_name else 0)
+                dataframe[self.target_column] = dataframe[self.target_column].apply(lambda val: 1 if val == self.target_column_churn_name else 0)
 
-                return self.dataframe
+                return dataframe
 
 
         def perform_eda(self):
@@ -92,17 +105,17 @@ class ChurnPredictor():
                 print(self.dataframe.describe())
 
                 # Identify column types
-                self.cat_columns = self.dataframe.select_dtypes(include = 'object').columns
-                self.num_columns = self.dataframe.select_dtypes(include = ['int', 'float']).columns
+                cat_columns = self.dataframe.select_dtypes(include = 'object').columns
+                num_columns = self.dataframe.select_dtypes(include = ['int', 'float']).columns
 
                 # Plot and save univariate analysis and bivariate analysis
-                for column in self.num_columns:
+                for column in num_columns:
                         fig = plt.figure(figsize=(20,10))
                         self.dataframe[column].hist()
                         fig.savefig('images/eda/{}_num_univariate.png'.format(column))
                         plt.close(fig)
         
-                for column in self.cat_columns:
+                for column in cat_columns:
                         fig = plt.figure(figsize=(20,10))
                         self.dataframe[column].value_counts('normalize').plot(kind='bar')
                         fig.savefig('images/eda/{}_cat_univariate.png'.format(column))
@@ -112,6 +125,8 @@ class ChurnPredictor():
                 sns.heatmap(self.dataframe.corr(), annot=False, cmap='Dark2_r', linewidths = 2)
                 fig.savefig('images/eda/bivariate.png'.format(column))
                 plt.close(fig)
+
+                return cat_columns, num_columns
 
 
         def encoder_helper(self):
@@ -124,7 +139,7 @@ class ChurnPredictor():
                         self.cat_columns: (list) list of columns that contain categorical features
                         
                 output:
-                        self.dataframe: (DataFrame) pandas dataframe with new columns
+                        None
                 '''
                 
                 for column in self.cat_columns:
@@ -136,7 +151,7 @@ class ChurnPredictor():
 
                         self.dataframe[column] = helper_lst
 
-                return self.dataframe
+                
 
 
         def perform_feature_engineering(self):
@@ -145,15 +160,15 @@ class ChurnPredictor():
                         self.dataframe: (DataFrame) pandas dataframe
                         
                 output:
-                        self.X_train: X training data
-                        self.X_test: X testing data
-                        self.y_train: y training data
-                        self.y_test: y testing data
+                        X_train: X training data
+                        X_test: X testing data
+                        y_train: y training data
+                        y_test: y testing data
                 '''
 
                 df_train_columns = self.dataframe.drop([self.target_column], axis=1)              
-                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(df_train_columns, self.dataframe[self.target_column], test_size= 0.3, random_state=42)
-                return  self.X_train, self.X_test, self.y_train, self.y_test
+                X_train, X_test, y_train, y_test = train_test_split(df_train_columns, self.dataframe[self.target_column], test_size= 0.3, random_state=42)
+                return  X_train, X_test, y_train, y_test
 
 
         def train_models(self):
@@ -165,7 +180,10 @@ class ChurnPredictor():
                         self.y_train: y training data
                         self.y_test: y testing data
                 output:
-                        None
+                        y_train_preds_lr: training predictions from logistic regression
+                        y_train_preds_rf: training predictions from random forest
+                        y_test_preds_lr: test predictions from logistic regression
+                        y_test_preds_rf: test predictions from random forest
                 '''
                 # grid search
                 rfc = RandomForestClassifier(random_state=42)
@@ -176,19 +194,19 @@ class ChurnPredictor():
 
                 cv_rfc = GridSearchCV(estimator=rfc, param_grid=param_grid, cv=5)
                 cv_rfc.fit(self.X_train, self.y_train)
-                print(self.X_train.head()) #TODO: remove after testing
-                print(self.y_train.head()) #TODO: remove after testing
                 lrc.fit(self.X_train, self.y_train)
 
-                self.y_train_preds_rf = cv_rfc.best_estimator_.predict(self.X_train)
-                self.y_test_preds_rf = cv_rfc.best_estimator_.predict(self.X_test)
+                y_train_preds_rf = cv_rfc.best_estimator_.predict(self.X_train)
+                y_test_preds_rf = cv_rfc.best_estimator_.predict(self.X_test)
 
-                self.y_train_preds_lr = lrc.predict(self.X_train)
-                self.y_test_preds_lr = lrc.predict(self.X_test)      
+                y_train_preds_lr = lrc.predict(self.X_train)
+                y_test_preds_lr = lrc.predict(self.X_test)      
 
                  # save best model
                 joblib.dump(cv_rfc.best_estimator_, './models/rfc_model.pkl')
                 joblib.dump(lrc, './models/logistic_model.pkl')
+
+                return y_train_preds_rf, y_test_preds_rf, y_train_preds_lr, y_test_preds_lr
 
         def classification_report_image(self):
                 '''
@@ -231,7 +249,7 @@ class ChurnPredictor():
 
                 combined_figure = plt.figure(figsize=(15, 8))
                 axis = plt.gca()
-                rfc_disp = plot_roc_curve(rfc_model, self.X_test, self.y_test, ax=axis, alpha=0.8)
+                rfc_plot.plot(ax=axis, alpha=0.8)
                 lrc_plot.plot(ax=axis, alpha=0.8)
                 combined_figure.savefig('images/results/combined_roc.png')
                 plt.close(combined_figure)
@@ -242,7 +260,7 @@ class ChurnPredictor():
                 creates and stores the feature importances in pth
                 input:
                         model: model object containing feature_importances_
-                        self.dataframe: pandas dataframe of X & y values                        
+                        self.X_test: X testing data                     
 
                 output:
                         None
@@ -258,10 +276,3 @@ class ChurnPredictor():
 
 if __name__ == '__main__':
         predictor = ChurnPredictor('data/bank_data.csv', 'Attrition_Flag', 'Attrited Customer')
-        predictor.import_data()
-        predictor.perform_eda()
-        predictor.encoder_helper()
-        predictor.perform_feature_engineering()
-        predictor.train_models()
-        predictor.classification_report_image()
-        predictor.feature_importance_plot()
