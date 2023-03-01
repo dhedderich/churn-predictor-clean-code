@@ -1,4 +1,4 @@
 # Attributes to ignore
 .*/
 __*/
-__pycache__
+__pycache__/
