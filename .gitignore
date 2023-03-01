@@ -1,3 +1,4 @@
-# ignore all . folders
+# Attributes to ignore
 .*/
 __*/
+__pycache__/
