@@ -1,1 +1,32 @@
-root - ERROR - Testing import_data: SUCCESS
+root - INFO - INFO: Testing import_data: SUCCESS
+root - INFO - INFO: Testing import_data: The file is not empty: SUCCESS
+root - INFO - INFO: Testing perform_eda - Target directory exists: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Gender saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Education_Level saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Marital_Status saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Income_Category saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Card_Category saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column CLIENTNUM saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Attrition_Flag saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Customer_Age saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Dependent_count saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Months_on_book saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Total_Relationship_Count saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Months_Inactive_12_mon saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Contacts_Count_12_mon saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Credit_Limit saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Total_Revolving_Bal saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Avg_Open_To_Buy saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Total_Amt_Chng_Q4_Q1 saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Total_Trans_Amt saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Total_Trans_Ct saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Total_Ct_Chng_Q4_Q1 saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for column Avg_Utilization_Ratio saved correctly: SUCCESS
+root - INFO - INFO: Testing perform eda - EDA result for bivariate analysis saved correctly: SUCCESS
+root - INFO - INFO: Testing encoder_helper: SUCCESS
+root - INFO - INFO: Testing perform_feature_engineering - x_train & x_test do not contain target column: SUCCESS
+root - INFO - INFO: Testing perform_feature_engineering - No DataFrame for training and testing is empty - SUCCESS
+root - INFO - INFO: Testing train_models - Target directory exists: SUCCESS
+root - INFO - INFO: Testing train_models - Models were created successfully: SUCCESS
+root - INFO - INFO: Testing classification_report_image - Target directory exists: SUCCESS
+root - INFO - INFO: Testing classification_report_image - Images were created successfully: SUCCESS

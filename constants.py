@@ -2,6 +2,9 @@
 In this file the hyperparameters for the Random Forest and Logistic Regression
 model can be adjusted to have an easier interaction with the ChurnPredictor. The
 parameters are imported to the churn_library.py in the beginning of the execution.
+
+Author: David Hedderich
+Date: 01.03.2023
 '''
 
 # Define your hyperparameter search space for the random forrest below
@@ -14,4 +17,4 @@ random_forest_search_space = {
 
 # Define the solver and maximum iterations for the Logistic Regression model
 logreg_solver = 'lbfgs'
-logreg_max_iter = 70
+logreg_max_iter = 30
