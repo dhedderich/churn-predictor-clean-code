@@ -31,14 +31,16 @@ class ChurnPredictor():
     model, saves a training report to ./images/results and saves the machine learning models
     to ./models
             Arguments:
-            path: (str) a path to the csv
-
-            Methods:
-            import_data: returns dataframe for the csv found at pth
-            target_column: (str) column that holds the binary classification resulting in either
+            - path: (str) a path to the csv
+            - target_column: (str) column that holds the binary classification resulting in either
             "Churn" (1) or "No Churn (0) target_column_churn_name: (str) name of the positive
             class within the binary classification target column that represents the "Churn" (1),
             if the target column is categorical
+            - target_column_churn_name: (str) Name of the positive class in the target_column.
+
+            Methods:
+            import_data: returns dataframe for the csv found at pth
+            
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -58,6 +60,7 @@ class ChurnPredictor():
         self.target_column_churn_name = target_column_churn_name
 
         self.dataframe = self.import_data()
+
         self.cat_columns, self.num_columns = self.perform_eda()
         self.encoder_helper()
         self.x_train, self.x_test, self.y_train, self.y_test = self.perform_feature_engineering()
@@ -77,7 +80,7 @@ class ChurnPredictor():
         """
 
         # Read in .csv file
-        dataframe = pd.read_csv(self.path)
+        dataframe = pd.read_csv(self.path, index_col=0)
 
         # Encode target column to create a binary classification problem
         dataframe[self.target_column] = dataframe[self.target_column].apply(
